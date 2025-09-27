@@ -1,0 +1,89 @@
+/* Global styles with RTL support */
+body {
+  font-family: 'Noto Naskh Arabic', serif;
+  direction: rtl;
+  text-align: right;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  color: #333;
+  line-height: 1.6;
+}
+
+header {
+  background-color: #4CAF50;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+h1, h2 {
+  margin: 0.5rem 0;
+}
+
+input[type="text"] {
+  padding: 0.5rem;
+  width: 70%;
+  max-width: 300px;
+  margin-left: 1rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #1976D2;
+}
+
+#titlesList {
+  padding: 1rem;
+}
+
+#titlesList ul {
+  list-style: none;
+  padding: 0;
+}
+
+#titlesList li {
+  background-color: white;
+  margin: 0.5rem 0;
+  padding: 1rem;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+}
+
+#titlesList li:hover {
+  background-color: #e0f7fa;
+}
+
+#poemDetail {
+  padding: 1rem;
+  background-color: white;
+  border-radius: 5px;
+  margin: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#poemContent {
+  white-space: pre-wrap; /* Preserve line breaks and wrap long lines */
+  font-size: 1.2rem;
+  margin-top: 1rem;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Media queries for responsiveness (PWA mobile-friendly) */
+@media (max-width: 600px) {
+  input[type="text"] {
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+}
