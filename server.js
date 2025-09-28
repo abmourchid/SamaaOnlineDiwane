@@ -104,16 +104,17 @@ app.get('/*splat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-/*
+
 // Start server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
-*/
 
 
+/*
 // Change: Added '0.0.0.0' as the second argument to app.listen.
 // Why: This makes the server accessible to any device on your local network.
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running at http://0.0.0.0:${port}`);
 });
+*/
