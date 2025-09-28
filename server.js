@@ -1,24 +1,27 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const path = require('path');
 const app = express();
 
 // const port = 3000;
 const port = process.env.PORT || 3000;
 
-// Connect to SQLite database (creates file if not exists)
-const db = new sqlite3.Database('./poems.db');
+// Connect to PostgreSQL using Vercel's DATABASE_URL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }  // Required for Vercel Postgres
+});
 
 // Middleware to serve static files from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize database with table and sample data
-function initDatabase() {
-  db.serialize(() => {
+async function initDatabase() {
+  try {
     // Create poems table if not exists
-    db.run(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS poems (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         title TEXT UNIQUE NOT NULL,
         content TEXT NOT NULL
       )
@@ -34,59 +37,62 @@ function initDatabase() {
     ];
 
     // Check if data exists before inserting
-    db.get('SELECT COUNT(*) as count FROM poems', (err, row) => {
-      if (err) console.error(err);
-      if (row.count === 0) {
-        const stmt = db.prepare('INSERT INTO poems (title, content) VALUES (?, ?)');
-        samplePoems.forEach(poem => stmt.run(poem.title, poem.content));
-        stmt.finalize();
-        console.log('Sample poems inserted.');
+    const countRes = await pool.query('SELECT COUNT(*) as count FROM poems');
+    if (parseInt(countRes.rows[0].count) === 0) {
+      for (const poem of samplePoems) {
+        await pool.query('INSERT INTO poems (title, content) VALUES ($1, $2)', [poem.title, poem.content]);
       }
-    });
-  });
+      console.log('Sample poems inserted.');
+    }
+  } catch (err) {
+    console.error('Database initialization error:', err);
+  }
 }
 
 initDatabase();
 
 // API Endpoint: Get all poem titles
-app.get('/api/poems', (req, res) => {
-  db.all('SELECT title FROM poems', (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: 'Database error' });
-    } else {
-      res.json(rows.map(row => row.title));
-    }
-  });
+app.get('/api/poems', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT title FROM poems');
+    res.json(result.rows.map(row => row.title));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // API Endpoint: Search poem titles
-app.get('/api/search', (req, res) => {
+app.get('/api/search', async (req, res) => {
   const query = `%${req.query.q || ''}%`; // Use LIKE for partial match
-  db.all('SELECT title FROM poems WHERE title LIKE ?', [query], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: 'Database error' });
-    } else {
-      res.json(rows.map(row => row.title));
-    }
-  });
+  try {
+    const result = await pool.query('SELECT title FROM poems WHERE title LIKE $1', [query]);
+    res.json(result.rows.map(row => row.title));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // API Endpoint: Get poem content by title
-app.get('/api/poem', (req, res) => {
+app.get('/api/poem', async (req, res) => {
   const title = req.query.title;
   if (!title) {
     return res.status(400).json({ error: 'Title required' });
   }
-  db.get('SELECT content FROM poems WHERE title = ?', [title], (err, row) => {
-    if (err) {
-      res.status(500).json({ error: 'Database error' });
-    } else if (!row) {
+  try {
+    const result = await pool.query('SELECT content FROM poems WHERE title = $1', [title]);
+    if (result.rows.length === 0) {
       res.status(404).json({ error: 'Poem not found' });
     } else {
-      res.json({ content: row.content });
+      res.json({ content: result.rows[0].content });
     }
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
+
 /*
 // Serve the main index.html for all non-API routes (SPA fallback)
 app.get('*', (req, res) => {

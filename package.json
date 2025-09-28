@@ -13,6 +13,6 @@
   "dependencies": {
     "express": "^5.1.0",
     "path-to-regexp": "^6.2.1",
-    "sqlite3": "^5.1.7"
+    "pg": "^8.16.3"
   }
 }
