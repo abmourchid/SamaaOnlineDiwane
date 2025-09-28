@@ -12,12 +12,22 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }  // Required for Vercel Postgres
 });
 
+// Test connection on startup
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Database connection error:', err.stack);
+    return;
+  }
+  console.log('Connected to Nile Postgres');
+  release();
+});
+
 // Middleware to serve static files from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Initialize database with table and sample data
 async function initDatabase() {
   try {
+    console.log('Initializing database...');
     // Create poems table if not exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS poems (
@@ -26,26 +36,28 @@ async function initDatabase() {
         content TEXT NOT NULL
       )
     `);
+    console.log('Table created or exists.');
 
-    // Insert sample Arabic poems (only if table is empty)
-    const samplePoems = [
-      { title: 'قصيدة الورد', content: 'الورد ينبت في الحدائق الخضراء\nيبعث العطر في كل مكان\nجماله يسحر العيون\nويملأ القلوب بالسرور' },
-      { title: 'قصيدة البحر', content: 'البحر الهائج يضرب الصخور\nأمواجه تروي قصص الأزمان\nفي أعماقه أسرار مخفية\nوحياة مليئة بالغموض' },
-      { title: 'قصيدة الجبل', content: 'الجبل الشامخ يقف صامدا\nيواجه الرياح والعواصف\nقمته تلامس السماء\nويحمل تاريخ الأرض' },
-      { title: 'قصيدة الشمس', content: 'الشمس تشرق كل صباح\nتنير العالم بأشعتها الذهبية\nتدفئ القلوب الباردة\nوتزرع الأمل في النفوس' },
-      { title: 'قصيدة القمر', content: 'القمر يضيء في الليل الدامس\nيرسم لوحات فضية على الأرض\nسر جماله في هدوئه\nويحكي حكايات العشاق' }
-    ];
-
-    // Check if data exists before inserting
+    // Check if data exists
     const countRes = await pool.query('SELECT COUNT(*) as count FROM poems');
     if (parseInt(countRes.rows[0].count) === 0) {
+      const samplePoems = [
+        { title: 'قصيدة الورد', content: 'الورد ينبت في الحدائق الخضراء\nيبعث العطر في كل مكان\nجماله يسحر العيون\nويملأ القلوب بالسرور' },
+        { title: 'قصيدة البحر', content: 'البحر الهائج يضرب الصخور\nأمواجه تروي قصص الأزمان\nفي أعماقه أسرار مخفية\nوحياة مليئة بالغموض' },
+        { title: 'قصيدة الجبل', content: 'الجبل الشامخ يقف صامدا\nيواجه الرياح والعواصف\nقمته تلامس السماء\nويحمل تاريخ الأرض' },
+        { title: 'قصيدة الشمس', content: 'الشمس تشرق كل صباح\nتنير العالم بأشعتها الذهبية\nتدفئ القلوب الباردة\nوتزرع الأمل في النفوس' },
+        { title: 'قصيدة القمر', content: 'القمر يضيء في الليل الدامس\nيرسم لوحات فضية على الأرض\nسر جماله في هدوئه\nويحكي حكايات العشاق' }
+      ];
       for (const poem of samplePoems) {
         await pool.query('INSERT INTO poems (title, content) VALUES ($1, $2)', [poem.title, poem.content]);
       }
       console.log('Sample poems inserted.');
+    } else {
+      console.log('Poems table already populated.');
     }
   } catch (err) {
-    console.error('Database initialization error:', err);
+    console.error('Database initialization error:', err.stack);
+    throw err; // Ensure errors are caught in logs
   }
 }
 
